@@ -1,0 +1,9 @@
+:root {
+  --rku-color-fg: #0f172a;
+  --rku-color-bg: #ffffff;
+  --rku-radius: 12px;
+  --rku-space-1: 8px;
+  --rku-space-2: 12px;
+  --rku-space-3: 16px;
+  --rku-font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto;
+}

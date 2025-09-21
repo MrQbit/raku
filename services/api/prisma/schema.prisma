@@ -1,0 +1,103 @@
+datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+generator client { provider = "prisma-client-js" }
+
+model Server {
+  id                String   @id @default(uuid())
+  name              String
+  version           String
+  env               String
+  status            String
+  endpointBaseUrl   String
+  owners            String[] @db.Text
+  quotasRps         Int?
+  quotasConcurrency Int?
+  secretsRef        String?
+  packs             ServerPack[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Pack {
+  id                String   @id @default(uuid())
+  namespace         String
+  version           String
+  intentsJson       Json
+  errorModel        String[]
+  policies          String[]
+  scoreLatencyP95Ms Int?
+  scoreErrorRate    Float?
+  servers           ServerPack[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model ServerPack {
+  serverId String
+  packId   String
+  server   Server @relation(fields: [serverId], references: [id])
+  pack     Pack   @relation(fields: [packId], references: [id])
+  @@id([serverId, packId])
+}
+
+model Policy {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  rbacJson     Json
+  abacJson     Json?
+  approvalsJson Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Route {
+  id        String   @id @default(uuid())
+  intent    String
+  serverId  String
+  packId    String
+  version   String
+  createdAt DateTime @default(now())
+}
+
+model Trace {
+  id             String   @id @default(uuid())
+  conversationId String?
+  agentId        String
+  intent         String
+  routeJson      Json
+  inputRedacted  Json?
+  outputRedacted Json?
+  latencyMs      Int
+  cost           Float?
+  status         String
+  createdAt      DateTime @default(now())
+}
+
+model AsyncJob {
+  id         String   @id @default(uuid())
+  owner      String
+  status     String
+  progress   Int?
+  resultRef  String?
+  payloadJson Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model ThirdPartyMcp {
+  id             String   @id @default(uuid())
+  name           String
+  description    String?
+  baseUrl        String
+  authType       String
+  authHeader     String?
+  secretRef      String?
+  healthEndpoint String?
+  capabilities   Json
+  owners         String[] @db.Text
+  env            String   @default("dev")
+  status         String   @default("healthy")
+  tags           String[] @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

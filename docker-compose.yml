@@ -1,0 +1,19 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: raku
+      POSTGRES_PASSWORD: raku
+      POSTGRES_DB: raku
+    ports: ["5432:5432"]
+  api:
+    build: ./services/api
+    env_file: services/api/.env.example
+    environment:
+      DATABASE_URL: postgresql://raku:raku@db:5432/raku
+    ports: ["8080:8080"]
+    depends_on: [db]
+  sample_mcp:
+    build: ./services/sample-mcp
+    ports: ["9091:9091"]
