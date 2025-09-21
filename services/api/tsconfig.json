@@ -1,0 +1,13 @@
+{
+  "extends": "../../packages/tooling/tsconfig/base.json",
+  "include": ["src"],
+  "compilerOptions": {
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@raku/contracts": ["../../packages/contracts/src/index.ts"],
+      "@raku/ui-foundation": ["../../packages/ui-foundation/src/index.ts"]
+    },
+    "types": ["node"]
+  }
+}
