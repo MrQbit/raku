@@ -1,6 +1,6 @@
-# RAKU — MCP Manager
+# RAKU — MCP Factory & Manager
 
-Enterprise-ready MCP control plane with Fastify, Prisma/PostgreSQL, Module Federation React apps, shared contracts, and a built-in Azure OpenAI assistant for MCP onboarding.
+Enterprise-ready MCP Factory that automates the creation of MCP servers from existing APIs. Features intelligent API analysis, pack-based tool grouping, Docker image generation, Kubernetes deployment, and comprehensive management through Fastify, Prisma/PostgreSQL, Module Federation React apps, and Azure OpenAI integration.
 
 ## Quick links
 
@@ -23,7 +23,18 @@ pnpm --filter @raku/api prisma:migrate
 pnpm --filter @raku/api dev
 ```
 
-The API listens on `http://localhost:8080` by default. Point agents to `POST /v1/route/execute` and manage MCP registrations with `/v1/integrations/mcp/*` endpoints.
+The API listens on `http://localhost:8080` by default. Point agents to `POST /v1/route/execute`, manage MCP registrations with `/v1/integrations/mcp/*` endpoints, and deploy MCP servers with `/v1/servers/deploy`.
+
+## MCP Factory Workflow
+
+RAKU automates the complete MCP creation process:
+
+1. **API Analysis** → Analyze existing APIs (REST, GraphQL, etc.)
+2. **Pack Creation** → Group related tools into logical packs
+3. **Pack Selection** → Choose which packs to include in MCP server
+4. **Docker Generation** → Generate Docker images with selected packs
+5. **Kubernetes Deployment** → Deploy to configurable landing zones
+6. **Server Management** → Monitor and manage deployed MCP servers
 
 ### Azure OpenAI-powered assistant
 
@@ -62,14 +73,27 @@ The built-in enablement agent uses Azure OpenAI to analyze existing APIs and dra
 ## Running the UI surfaces
 
 ```bash
-pnpm --filter @raku/ui-host dev       # http://localhost:3000
-pnpm --filter @raku/ui-catalog dev    # http://localhost:3001
-pnpm --filter @raku/ui-docs dev       # http://localhost:3007
-pnpm --filter @raku/sample-mcp dev    # http://localhost:9091
+pnpm --filter @raku/ui-host dev       # http://localhost:3000 (Main Dashboard)
+pnpm --filter @raku/ui-catalog dev    # http://localhost:3001 (Server Catalog)
+pnpm --filter @raku/ui-server dev     # http://localhost:3002 (Server Management)
+pnpm --filter @raku/ui-packs dev      # http://localhost:3003 (MCP Factory - Pack Management)
+pnpm --filter @raku/ui-policy dev     # http://localhost:3004 (Policy Management)
+pnpm --filter @raku/ui-obs dev        # http://localhost:3005 (Observability Dashboard)
+pnpm --filter @raku/ui-a2a dev        # http://localhost:3006 (Agent-to-Agent Console)
+pnpm --filter @raku/ui-docs dev       # http://localhost:3007 (Documentation)
+pnpm --filter @raku/sample-mcp dev    # http://localhost:9091 (Sample MCP Server)
 ```
 
-- The Docs app (`/docs`) now exposes an “Ask RAKU Copilot” panel backed by the planner endpoint.
-- The Catalog app lists servers and allows one-click registration of the sample MCP server.
+### UI Applications Overview
+
+- **Host Dashboard** (`/host`) - Main navigation hub with Module Federation integration
+- **Server Catalog** (`/catalog`) - Browse and register third-party MCP servers
+- **Server Management** (`/servers`) - Manage deployed MCP server instances
+- **MCP Factory** (`/packs`) - Complete MCP creation workflow (API analysis → Pack creation → Deployment)
+- **Policy Management** (`/policies`) - RBAC/ABAC policy configuration
+- **Observability** (`/obs`) - Metrics, traces, and monitoring dashboards
+- **Agent Console** (`/a2a`) - Agent-to-agent communication and job management
+- **Documentation** (`/docs`) - API docs and "Ask RAKU Copilot" assistant
 
 ## Sample MCP registration
 
@@ -97,7 +121,33 @@ await rakuExecute(
 );
 ```
 
+## Landing Zones & Deployment
+
+RAKU supports configurable Kubernetes landing zones for MCP server deployment:
+
+```bash
+# Environment variables for landing zone configuration
+DEV_CLUSTER_URL=https://dev-k8s.company.com
+DEV_CLUSTER_TOKEN=dev-token-here
+DEV_REGISTRY=dev-registry.company.com
+
+STAGING_CLUSTER_URL=https://staging-k8s.company.com
+STAGING_CLUSTER_TOKEN=staging-token-here
+STAGING_REGISTRY=staging-registry.company.com
+
+PROD_CLUSTER_URL=https://prod-k8s.company.com
+PROD_CLUSTER_TOKEN=prod-token-here
+PROD_REGISTRY=prod-registry.company.com
+```
+
+Each deployed MCP server runs in its own dedicated Kubernetes namespace with:
+- Docker image generation from selected packs
+- Automatic Kubernetes manifest generation
+- Health checking and monitoring
+- Resource management and scaling
+
 ## Enterprise notes
 
 - `ops/docker-compose.enterprise.yml` starts Postgres, Redis, Kafka, ClickHouse, Fastify API, sample MCP, and an NGINX gateway.
 - Harden the public ingress with OIDC, mTLS, WAF, and rate limiting before exposing to agents.
+- Landing zones support multi-tenant isolation and security policies.

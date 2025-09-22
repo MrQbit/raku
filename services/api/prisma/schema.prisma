@@ -107,3 +107,31 @@ model ThirdPartyMcp {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
+
+model LandingZone {
+  id               String   @id @default(uuid())
+  name             String   @unique
+  clusterUrl       String
+  tokenEncrypted   String
+  registryUrl      String
+  namespacePrefix  String   @default("mcp")
+  description      String?
+  isActive         Boolean  @default(true)
+  deployments      McpServerDeployment[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model McpServerDeployment {
+  id             String   @id @default(uuid())
+  serverName     String
+  landingZoneId  String
+  namespace      String
+  imageUrl       String
+  status         String   @default("pending") // pending, building, deploying, running, failed
+  configJson     Json?
+  deployedAt     DateTime?
+  landingZone    LandingZone @relation(fields: [landingZoneId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

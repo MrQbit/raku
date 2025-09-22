@@ -2,7 +2,7 @@
 
 ## System overview
 
-RAKU is an enterprise-grade Model Context Protocol (MCP) control plane that centralizes routing, cataloging, and governance for internal and third-party MCP providers. The monorepo is organized as a Turborepo workspace with Fastify/Prisma services, Module Federation React apps, shared contract packages, and infrastructure automation. Key traits:
+RAKU is an enterprise-grade MCP Factory that automates the creation, deployment, and management of MCP servers from existing APIs. The system provides intelligent API analysis, pack-based tool grouping, Docker image generation, Kubernetes deployment, and comprehensive governance for both generated and third-party MCP providers. The monorepo is organized as a Turborepo workspace with Fastify/Prisma services, Module Federation React apps, shared contract packages, and infrastructure automation. Key traits:
 
 - **Deterministic contracts** shared by all surfaces via `@raku/contracts` (Zod schemas and helpers).
 - **Fastify API service** backed by PostgreSQL/Prisma with extension points for Redis, Kafka, ClickHouse, and OTEL exports.
@@ -37,7 +37,7 @@ Turborepo pipelines orchestrate build, lint, test, and typecheck tasks across pa
 1. `POST /v1/route/execute` validates the payload with Zod.
 2. `usecases/executeIntent` fetches a route via `domain/routing` and enforces policy checks.
 3. `domain/adapters` calls either an internal adapter or third-party MCP HTTP endpoint, surfacing async jobs.
-4. `domain/tracing` (placeholder) redacts sensitive data and would emit traces/persist to the DB.
+4. `domain/tracing` redacts sensitive data and persists traces to the database.
 5. Responses are normalized as `{ status: "ok" | "async" | "error", ... }`.
 
 ### Request lifecycle: assistant planner
@@ -55,12 +55,25 @@ Turborepo pipelines orchestrate build, lint, test, and typecheck tasks across pa
 - OTEL exporter endpoint can be wired for tracing/metrics.
 - NGINX gateway proxy (in `ops/`) fronts the API for TLS termination, auth, and WAF policies.
 
+### Core features implemented
+
+- **Intelligent Route Resolution**: Database-driven routing with fallback to third-party MCP capability matching
+- **Policy Enforcement**: RBAC/ABAC policy engine with wildcard pattern matching and constraint evaluation
+- **Async Job Management**: Full CRUD operations for long-running tasks with progress tracking
+- **Comprehensive Tracing**: Request/response logging with automatic sensitive data redaction
+- **Third-party MCP Integration**: Complete registration and discovery workflow with health checking
+- **MCP Factory Workflow**: API analysis, pack creation, Docker generation, and Kubernetes deployment (in development)
+
 ## UI surfaces
 
 - **`apps/ui-host`** renders navigation and lazy-loads remote apps via Module Federation.
 - **Catalog (`apps/ui-catalog`)** lists servers/packs and drives third-party MCP registration.
-- **Docs (`apps/ui-docs`)** provides onboarding guides plus the new “Ask RAKU Copilot” panel that calls the assistant endpoint and renders JSON guidance.
-- **Other remotes** (policy, packs, observability, server, a2a) are scaffolded placeholders to extend.
+- **Server Management (`apps/ui-server`)** manages deployed MCP server instances and third-party registrations.
+- **MCP Factory (`apps/ui-packs`)** provides the complete MCP creation workflow: API analysis → Pack creation → Pack selection → Docker generation → Kubernetes deployment.
+- **Policy Management (`apps/ui-policy`)** configures RBAC/ABAC policies and approval workflows.
+- **Observability (`apps/ui-obs`)** displays metrics, traces, and monitoring dashboards.
+- **Agent Console (`apps/ui-a2a`)** manages agent-to-agent communication and async job monitoring.
+- **Docs (`apps/ui-docs`)** provides onboarding guides plus the "Ask RAKU Copilot" panel that calls the assistant endpoint and renders JSON guidance.
 - All apps consume the shared design tokens/components from `@raku/ui-foundation`.
 
 ## Sample MCP server (`services/sample-mcp`)
@@ -71,7 +84,35 @@ Implements health/meta/execute endpoints for `sample.echo` and `sample.math.add`
 
 - **Local development** uses pnpm workspaces and `docker-compose.yml` for API + Postgres + sample MCP.
 - **Enterprise Compose stack** (`ops/docker-compose.enterprise.yml`) adds Redis, Kafka, ClickHouse, and NGINX gateway. Environment variables point the API to managed services where desired.
+- **Landing Zones** support configurable Kubernetes clusters for MCP server deployment with dedicated namespaces, Docker image generation, and automatic manifest creation.
 - CI workflow installs dependencies, runs typechecks/lint/tests, and builds via Turborepo.
+
+## MCP Factory Workflow
+
+RAKU automates the complete MCP server creation process:
+
+1. **API Analysis**: Azure OpenAI analyzes existing APIs (REST, GraphQL, etc.) and suggests tool groupings
+2. **Pack Creation**: Users create logical packs of related tools (e.g., billing.pack, inventory.pack)
+3. **Pack Selection**: Choose which packs to include in a new MCP server
+4. **Docker Generation**: Generate Dockerfile and build container images with selected packs
+5. **Kubernetes Deployment**: Deploy to configurable landing zones with dedicated namespaces
+6. **Server Management**: Monitor, scale, and manage deployed MCP server instances
+
+### Landing Zone Configuration
+
+Landing zones are configured via environment variables:
+
+```bash
+DEV_CLUSTER_URL=https://dev-k8s.company.com
+DEV_CLUSTER_TOKEN=dev-token-here
+DEV_REGISTRY=dev-registry.company.com
+```
+
+Each deployed MCP server runs in its own Kubernetes namespace with:
+- Automatic resource management
+- Health checking and monitoring
+- Security policies and RBAC
+- Scaling and failover capabilities
 
 ## Decision log (“why” notes)
 
