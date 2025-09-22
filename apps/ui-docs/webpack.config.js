@@ -12,7 +12,10 @@ module.exports = {
       name: "ui_docs",
       filename: "remoteEntry.js",
       exposes: { "./App": "./src/App.tsx" },
-      shared: { react: { singleton: true }, "react-dom": { singleton: true } }
+      shared: {
+        react: { singleton: true, requiredVersion: false },
+        "react-dom": { singleton: true, requiredVersion: false }
+      }
     }),
     new HtmlWebpackPlugin({ template: "./public/index.html" })
   ]

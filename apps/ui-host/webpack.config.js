@@ -19,7 +19,10 @@ module.exports = {
         ui_a2a: "ui_a2a@http://localhost:3006/remoteEntry.js",
         ui_docs: "ui_docs@http://localhost:3007/remoteEntry.js"
       },
-      shared: { react: { singleton: true }, "react-dom": { singleton: true } }
+      shared: {
+        react: { singleton: true, requiredVersion: false },
+        "react-dom": { singleton: true, requiredVersion: false }
+      }
     }),
     new HtmlWebpackPlugin({ template: "./public/index.html" })
   ]

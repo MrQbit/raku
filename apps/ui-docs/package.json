@@ -2,11 +2,23 @@
   "name": "@raku/ui-docs",
   "version": "0.1.0",
   "private": true,
-  "scripts": { "dev": "webpack serve", "build": "webpack" },
-  "dependencies": { "react": "^18.2.0", "react-dom": "^18.2.0" },
+  "scripts": {
+    "dev": "webpack serve",
+    "build": "webpack"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
   "devDependencies": {
-    "typescript": "^5.4.0", "@types/react": "^18.2.67", "@types/react-dom": "^18.2.21", "@types/webpack-env": "^1.18.4",
-    "webpack": "^5.91.0", "webpack-cli": "^5.1.4", "webpack-dev-server": "^4.15.1",
-    "html-webpack-plugin": "^5.5.3", "ts-loader": "^9.5.1"
+    "@types/react": "^18.2.67",
+    "@types/react-dom": "^18.2.21",
+    "@types/webpack-env": "^1.18.8",
+    "html-webpack-plugin": "^5.5.3",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.4.0",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
   }
 }

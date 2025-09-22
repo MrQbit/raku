@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import prisma from "../db/client";
 
 function redact(obj: any): any {
   const SENSITIVE = ["email","phone","ssn","password","token","secret"];
@@ -17,8 +18,21 @@ function redact(obj: any): any {
 }
 
 export async function recordTrace({ body, route, status, latency, output, error }: any) {
-  // TODO: Persist to DB + OTEL
   const id = crypto.randomUUID();
+  await prisma.trace.create({
+    data: {
+      id,
+      conversationId: (body?.context?.conversationId as string | undefined) ?? null,
+      agentId: (body?.context?.agentId as string | undefined) ?? "unknown",
+      intent: body?.intent ?? "unknown",
+      routeJson: route,
+      inputRedacted: redact(body?.inputs ?? {}),
+      outputRedacted: output ? redact(output) : null,
+      latencyMs: latency ?? 0,
+      cost: null,
+      status: String(status ?? "ok")
+    }
+  });
   return id;
 }
 

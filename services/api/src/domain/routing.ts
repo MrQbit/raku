@@ -1,20 +1,26 @@
-type ThirdPartyCandidate = { id: string; packId?: string; version?: string };
+import prisma from "../db/client";
 
 export async function pickRouteForIntent(intent: string, preferVersion?: string, ctx?: any) {
-  // TODO: 1) query internal Route table; 2) fallback to ThirdPartyMcp.capabilities match
-  const thirdPartyCandidate = null as ThirdPartyCandidate | null; // TODO: lookup by intent/env/status
-  if (thirdPartyCandidate) {
+  // 1) Prefer explicit internal routes
+  const explicit = await prisma.route.findFirst({ where: { intent }, orderBy: { createdAt: "desc" } });
+  if (explicit) {
     return {
-      route: {
-        intent,
-        target: {
-          serverId: thirdPartyCandidate.id,
-          packId: thirdPartyCandidate.packId ?? "thirdparty",
-          version: thirdPartyCandidate.version ?? "ext"
-        }
-      },
-      policyContext: { source: "thirdparty" }
+      route: { intent, target: { serverId: explicit.serverId, packId: explicit.packId, version: explicit.version } },
+      policyContext: { source: "route_table" }
     };
   }
-  return { route: { intent, target: { serverId: "00000000-0000-0000-0000-000000000001", packId: "00000000-0000-0000-0000-000000000002", version: preferVersion ?? "1.0.0" } }, policyContext: {} };
+
+  // 2) Fallback to ThirdPartyMcp capability match in requested env (if any)
+  const where: any = { status: "healthy" };
+  if (ctx?.env) where.env = ctx.env;
+  const mcps = await prisma.thirdPartyMcp.findMany({ where });
+  const match = mcps.find((m: any) => Array.isArray(m.capabilities) && (m.capabilities as any[]).some((c: any) => c?.intent === intent));
+  if (match) {
+    return {
+      route: { intent, target: { serverId: match.id, packId: "thirdparty", version: preferVersion ?? "ext" } },
+      policyContext: { source: "thirdparty", env: match.env }
+    };
+  }
+
+  throw new Error(`No route found for intent '${intent}'`);
 }

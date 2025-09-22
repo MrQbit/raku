@@ -1,12 +1,17 @@
 import fetch from "node-fetch";
+import prisma from "../db/client";
 
 export async function callAdapter({ route, inputs, context }: { route: any; inputs: any; context?: any }) {
   if (route?.target?.packId === "thirdparty") {
-    // TODO: fetch third-party record by serverId; set auth, call `${baseUrl}/execute`
-    const base = "http://localhost:9091"; // placeholder
+    const rec = await prisma.thirdPartyMcp.findUnique({ where: { id: route?.target?.serverId } });
+    if (!rec) throw new Error("Third-party MCP not found");
+    const base = rec.baseUrl.replace(/\/$/, "");
+    const headers: Record<string,string> = { "content-type": "application/json" };
+    if (rec.authType === "bearer" && rec.authHeader) headers["authorization"] = rec.authHeader;
+    if (rec.authType === "apiKey" && rec.authHeader) headers["x-api-key"] = rec.authHeader;
     const res = await fetch(`${base}/execute`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers,
       body: JSON.stringify({ intent: route.intent, inputs })
     });
     if (res.status === 202) {
