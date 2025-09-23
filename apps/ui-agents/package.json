@@ -1,0 +1,29 @@
+{
+  "name": "@raku/ui-agents",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "webpack serve",
+    "build": "webpack --mode=production",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@raku/ui-foundation": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.8.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "css-loader": "^6.11.0",
+    "html-webpack-plugin": "^5.6.3",
+    "style-loader": "^3.3.4",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.6.3",
+    "webpack": "^5.101.3",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.1.0"
+  }
+}
+

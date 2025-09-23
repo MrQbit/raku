@@ -4,7 +4,7 @@ import { z } from "zod";
 import { executeIntent } from "./usecases/executeIntent";
 import { discoverRoutes } from "./usecases/discoverRoutes";
 import { listServers, getServer } from "./usecases/servers";
-import { listPacks, getPack, upsertPack } from "./usecases/packs";
+import { listPacks, getPack, createPack, upsertPack } from "./usecases/packs";
 import { listPolicies, createPolicy } from "./usecases/policies";
 import { getJob, createJob, updateJob } from "./usecases/jobs";
 import { listTraces } from "./usecases/traces";
@@ -14,9 +14,44 @@ import { listLandingZones, getLandingZone, createLandingZone, updateLandingZone,
 import { listDeployments, getDeployment, createDeployment, updateDeploymentStatus, deleteDeployment } from "./usecases/deployments";
 import { deployMcpServer } from "./usecases/dockerGeneration";
 import { deployToKubernetes, getDeploymentStatus, scaleDeployment, deleteKubernetesDeployment } from "./usecases/kubernetes";
+import { listAgents, getAgent, createAgent, updateAgent, regenerateApiKey, deleteAgent } from "./usecases/agents";
+import { validateApiKey, generateApiKey } from "./auth";
 
 const app = Fastify({ logger: true });
 await app.register(cors, { origin: true });
+
+// Add authentication middleware to all routes except health check and agent registration
+app.addHook('preHandler', async (request, reply) => {
+  // Skip auth for health check and agent registration
+  if (request.url === '/health' || request.url === '/v1/agents' && request.method === 'POST') {
+    return;
+  }
+  await validateApiKey(request, reply);
+});
+
+// Health check endpoint (no auth required)
+app.get("/health", async (_req, reply) => {
+  const apiKey = process.env.RAKU_API_KEY || generateApiKey();
+  return reply.send({ 
+    status: "healthy", 
+    message: "RAKU API is running",
+    authRequired: !!process.env.RAKU_API_KEY,
+    currentApiKey: process.env.RAKU_API_KEY ? "***configured***" : apiKey
+  });
+});
+
+// API key generation endpoint (for development)
+app.get("/v1/auth/generate-key", async (_req, reply) => {
+  const newKey = generateApiKey();
+  return reply.send({ 
+    apiKey: newKey,
+    usage: {
+      curl: `curl -H "Authorization: Bearer ${newKey}" http://localhost:8080/v1/servers`,
+      header: `X-API-Key: ${newKey}`,
+      env: `RAKU_API_KEY=${newKey}`
+    }
+  });
+});
 
 app.post("/v1/route/execute", async (req, reply) => {
   const body = z.object({
@@ -43,7 +78,7 @@ app.get("/v1/servers/:id", async (req, reply) => reply.send(await getServer((req
 
 app.get("/v1/packs", async (_req, reply) => reply.send(await listPacks()));
 app.get("/v1/packs/:id", async (req, reply) => reply.send(await getPack((req.params as any).id)));
-app.post("/v1/packs", async (req, reply) => reply.code(201).send(await upsertPack(req.body)));
+app.post("/v1/packs", async (req, reply) => reply.code(201).send(await createPack(req.body)));
 app.put("/v1/packs/:id", async (req, reply) => reply.send(await upsertPack({ id: (req.params as any).id, ...(req.body as any) })));
 
 app.get("/v1/policies", async (_req, reply) => reply.send(await listPolicies()));
@@ -250,6 +285,77 @@ app.put("/v1/deployments/:deploymentId/scale", async (req, reply) => {
 app.delete("/v1/deployments/:deploymentId/kubernetes", async (req, reply) => {
   try {
     await deleteKubernetesDeployment((req.params as any).deploymentId);
+    return reply.send({ status: "deleted" });
+  } catch (error) {
+    return reply.code(400).send({ error: (error as Error).message });
+  }
+});
+
+// Agent Management Endpoints
+app.get("/v1/agents", async (_req, reply) => {
+  try {
+    return reply.send(await listAgents());
+  } catch (error) {
+    return reply.code(500).send({ error: (error as Error).message });
+  }
+});
+
+app.get("/v1/agents/:agentId", async (req, reply) => {
+  try {
+    return reply.send(await getAgent((req.params as any).agentId));
+  } catch (error) {
+    return reply.code(404).send({ error: (error as Error).message });
+  }
+});
+
+app.post("/v1/agents", async (req, reply) => {
+  const body = z.object({
+    name: z.string().min(1),
+    description: z.string().optional(),
+    url: z.string().url().optional(),
+    owners: z.array(z.string()).optional(),
+    tags: z.array(z.string()).optional(),
+    quotasRps: z.number().min(1).optional()
+  }).parse(req.body);
+  
+  try {
+    const agent = await createAgent(body);
+    return reply.code(201).send(agent);
+  } catch (error) {
+    return reply.code(400).send({ error: (error as Error).message });
+  }
+});
+
+app.put("/v1/agents/:agentId", async (req, reply) => {
+  const body = z.object({
+    name: z.string().min(1).optional(),
+    description: z.string().optional(),
+    url: z.string().url().optional(),
+    isActive: z.boolean().optional(),
+    owners: z.array(z.string()).optional(),
+    tags: z.array(z.string()).optional(),
+    quotasRps: z.number().min(1).optional()
+  }).parse(req.body);
+  
+  try {
+    return reply.send(await updateAgent((req.params as any).agentId, body));
+  } catch (error) {
+    return reply.code(400).send({ error: (error as Error).message });
+  }
+});
+
+app.post("/v1/agents/:agentId/regenerate-key", async (req, reply) => {
+  try {
+    const agent = await regenerateApiKey((req.params as any).agentId);
+    return reply.send(agent);
+  } catch (error) {
+    return reply.code(400).send({ error: (error as Error).message });
+  }
+});
+
+app.delete("/v1/agents/:agentId", async (req, reply) => {
+  try {
+    await deleteAgent((req.params as any).agentId);
     return reply.send({ status: "deleted" });
   } catch (error) {
     return reply.code(400).send({ error: (error as Error).message });

@@ -27,7 +27,24 @@ model Pack {
   id                String   @id @default(uuid())
   namespace         String
   version           String
+  description       String?
+  
+  // Legacy tool intents (for backward compatibility)
   intentsJson       Json
+  
+  // New hybrid pack resource types
+  toolsJson         Json?    // API endpoints, functions
+  databasesJson     Json?    // Database tables, views, schemas
+  filesJson         Json?    // File system resources, documents
+  knowledgeJson     Json?    // Searchable content, embeddings
+  streamsJson       Json?    // Real-time data, logs
+  promptsJson       Json?    // Templates, instructions
+  contextSchemaJson Json?    // Context management schema
+  capabilitiesJson  Json?    // Broader capabilities beyond tools
+  relationshipsJson Json?    // How resources connect
+  workflowsJson     Json?    // Multi-step processes
+  
+  // Metadata
   errorModel        String[]
   policies          String[]
   scoreLatencyP95Ms Int?
@@ -134,4 +151,20 @@ model McpServerDeployment {
   landingZone    LandingZone @relation(fields: [landingZoneId], references: [id])
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+model Agent {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  url         String?  // Web or API URL
+  apiKey      String   @unique // Encrypted API key
+  isActive    Boolean  @default(true)
+  owners      String[] @db.Text
+  tags        String[] @db.Text
+  quotasRps   Int?     // Rate limit per second
+  lastUsedAt  DateTime?
+  usageStats  Json?    // Store usage statistics
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

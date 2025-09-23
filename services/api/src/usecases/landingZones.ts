@@ -1,5 +1,5 @@
 import prisma from "../db/client";
-import crypto from "crypto";
+import * as crypto from "crypto";
 
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || "default-key-for-development-only";
 const ALGORITHM = "aes-256-gcm";
